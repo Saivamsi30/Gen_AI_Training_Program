@@ -1,0 +1,48 @@
+# 1. Define a reusable testing function
+def run_filtered_query(user_query, target_category, n_results=2):
+    print(f"❓ Question: '{user_query}'")
+    print(f"🎯 Filter Applied: category = '{target_category}'")
+    
+    # Convert the question to a vector
+    query_embedding = model.encode(user_query).tolist()
+    
+    # Search ChromaDB with the metadata filter
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=n_results,
+        where={"category": target_category} # This is the crucial metadata filter
+    )
+    
+    # Display the results
+    if results['documents'] and results['documents'][0]:
+        for i, doc in enumerate(results['documents'][0]):
+            print(f"\n📄 Result {i + 1} (ID: {results['ids'][0][i]}):")
+            print(f"{doc}")
+    else:
+        print("\n❌ No results found for this filter.")
+    print("\n" + "="*50 + "\n")
+
+# 2. Run the test scenarios
+
+# --- TEST A: Correctly matching a Customer Experience query ---
+# This should pull steps from the PDF4_Customer_Experience_Guide
+run_filtered_query(
+    user_query="I was overcharged on my bill and my recharge is missing.", 
+    target_category="Customer_experience"
+)
+
+# --- TEST B: Correctly matching a Hardware query ---
+# This should pull steps from the PDF3_Hardware_Equipment_Guide
+run_filtered_query(
+    user_query="My router internet light is off, what do I do?", 
+    target_category="Hardware_equipment"
+)
+
+# --- TEST C: The Metadata Filter Proof ---
+# We ask a hardware question, but FORCE it to only search the Service Outage category.
+# Because of the metadata filter, it will NOT return the router instructions, 
+# proving that your filter successfully isolates the PDFs.
+run_filtered_query(
+    user_query="My router internet light is off, what do I do?", 
+    target_category="Service_outage"
+)
